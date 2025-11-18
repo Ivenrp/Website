@@ -1,1 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Analisis MBG</title>
+<style>
+    body { font-family: Arial; max-width: 700px; margin: auto; padding: 20px; }
+    input, textarea { width: 100%; padding: 5px; margin-top: 5px; }
+    button { padding: 10px; margin-top: 10px; width: 100%; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #aaa; padding: 8px; text-align: center; }
+    th { background: #eee; }
+</style>
+</head>
+<body>
 
+<h2>Analisis Risiko Dapur MBG</h2>
+
+<h3>1. Daftar Dapur (pisahkan dengan koma)</h3>
+<input id="inputD" value="D1, D2, D3, D4">
+
+<h3>2. Daftar Sekolah</h3>
+<input id="inputS" value="S1, S2, S3, S4, S5, S6">
+
+<h3>3. Relasi Dapur → Sekolah (format: D1-S1, D1-S2, ...)</h3>
+<textarea id="inputR" rows="4">D1-S1, D1-S2, D2-S3, D2-S4, D3-S5, D2-S6, D4-S1</textarea>
+
+<h3>4. Sekolah Keracunan</h3>
+<input id="inputK" value="S3, S4, S6">
+
+<button onclick="analisis()">JALANKAN ANALISIS</button>
+
+<div id="hasil"></div>
+
+<script>
+function analisis() {
+    let D = document.getElementById("inputD").value.split(",").map(x=>x.trim());
+    let S = document.getElementById("inputS").value.split(",").map(x=>x.trim());
+    let Rraw = document.getElementById("inputR").value.split(",");
+    let K = new Set(document.getElementById("inputK").value.split(",").map(x=>x.trim()));
+
+    // Bangun function f: sekolah -> dapur
+    let f = {};
+    Rraw.forEach(pair => {
+        let [d,s] = pair.trim().split("-");
+        if(d && s) f[s] = d;
+    });
+
+    // Analisis
+    let hasil = [];
+
+    D.forEach(d => {
+        let served = S.filter(s => f[s] === d);
+        let n = served.length;
+        let t = served.filter(s => K.has(s)).length;
+        let prop = n ? (t/n) : 0;
+        hasil.push({d, n, t, prop});
+    });
+
+    // Temukan dapur dengan prop tertinggi
+    let maxRisk = hasil.reduce((a,b)=> a.prop > b.prop ? a : b);
+
+    // Tampilkan
+    let html = `
+        <h3>Hasil Analisis Risiko</h3>
+        <table>
+            <tr>
+                <th>Dapur</th><th>Jumlah Sekolah</th><th>Terdampak</th><th>Proporsi</th>
+            </tr>
+    `;
+
+    hasil.forEach(h => {
+        html += `
+            <tr>
+                <td>${h.d}</td>
+                <td>${h.n}</td>
+                <td>${h.t}</td>
+                <td>${h.prop.toFixed(2)}</td>
+            </tr>
+        `;
+    });
+
+    html += `</table>
+        <h3>Dapur Risiko Tertinggi: <b>${maxRisk.d}</b> (proporsi = ${maxRisk.prop.toFixed(2)})</h3>
+    `;
+
+    document.getElementById("hasil").innerHTML = html;
+}
+</script>
+
+</body>
+</html>
